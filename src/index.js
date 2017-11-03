@@ -1,3 +1,7 @@
-const RepoMatrix = require('./RepoMatrix')
+const reactDOM = require('react-dom')
+const view = require('./view')
 
-RepoMatrix.start()
+reactDOM.render(
+  view.main([view.model, view.model]),
+  document.getElementById('react-root')
+)

@@ -18,7 +18,9 @@
   },
   "dependencies": {
     "is-github-user-or-org": "^1.1.1",
-    "mdi": "^2.0.46"
+    "mdi": "^2.0.46",
+    "react": "^16.0.0",
+    "react-dom": "^16.0.0"
   },
   "devDependencies": {
     "babel-cli": "6.26.0",
