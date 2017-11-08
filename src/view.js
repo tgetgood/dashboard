@@ -45,23 +45,54 @@ const model = {
 
 const nopad = {className: 'no-padding'}
 
-const checkbox = x =>
-      td(nopad,
-         div({className: 'success'},
-             i({className: 'mdi'})))
+const good = td(nopad,
+                div({className: 'success'},
+                    i({className: 'mdi mdi-checkbox-blank-circle-outline'})))
+
+const bad = td(nopad,
+               div({className: 'failure'},
+                   i({className: 'mdi mdi-checkbox-blank-circle'})))
+
+const ugly = td(nopad,
+                div({className: 'na'},
+                    i({className: 'mdi'}, 'n/a')))
 
 const renderChecks = ({files, repo}) => {
-  console.log(files)
-  const bits = [
-    files.readme,
-    files.readme.length,
-    files.license,
-    files.contributing
-  ]
-  const sections = Object.entries(files.readme.sections)
-  const github = [repo.stars, repo.issues]
+  // This guy renders the rules. There is probably a better way to do it,
+  const boxes = []
 
-  return bits.concat(sections).concat(github).map(checkbox)
+  const check = pred => {
+    if (pred) {
+      boxes.push(good)
+    } else {
+      boxes.push(bad)
+    }
+  }
+
+  const readme = pred => {
+    if (files.readme) {
+      check(pred(files.readme))
+    } else {
+      boxes.push(ugly)
+    }
+  }
+
+  check(files.readme)
+  readme(x => x.length > 500)
+
+  check(files.license)
+  check(files.contributing)
+
+  readme(x => x.sections.install)
+  readme(x => x.sections.toc)
+  readme(x => x.sections.usage)
+  readme(x => x.sections.contribute)
+  readme(x => x.sections.license)
+
+  boxes.push(td(nopad, repo.stars))
+  boxes.push(td(nopad, repo.issues))
+
+  return boxes
 }
 
 const readmeSections = Object.keys(model.files.readme.sections)
@@ -77,7 +108,6 @@ const secondHeader =
          readmeSections.concat([th({key: 1}, 'Stars'), th({key: 2}, 'Open Issues')]))
 
 const repoStatus = ({files, repo}, index) =>
-      // HACK: random keys won't do.
       tr({key: repo.name + index, className: 0 === index % 2 ? 'even' : 'odd'},
          td({className: 'left repo-name'},
             a({href: repo.org.url, className: 'name-org'}, repo.org.name),
