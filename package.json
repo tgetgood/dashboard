@@ -14,8 +14,11 @@
     "fix": "eslint src/. --fix"
   },
   "dependencies": {
+    "axios": "^0.17.0",
     "is-github-user-or-org": "^1.1.1",
     "mdi": "^2.0.46",
+    "name-your-contributors": "^3.3.0",
+    "query-string": "^5.0.1",
     "react": "^16.0.0",
     "react-dom": "^16.0.0",
     "uglifyjs-webpack-plugin": "^1.0.1",
