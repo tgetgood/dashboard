@@ -22,23 +22,15 @@ const staticFields = [
   'resourcePath'
 ]
 
-const others = [
-  'codeOfConduct',
-  'licenseInfo'
-]
-
-const files = [
+const readmeNames = [
   'readme.md',
   'README.md',
   'Readme.md',
-  'README.rst',
-  'LICENSE',
-  'LICENSE.md',
-  'CONTRIBUTING.md'
+  'README.rst'
 ]
 
 const counters = [
-  'starGazers',
+  'stargazers',
   'watchers'
 ]
 
@@ -47,37 +39,47 @@ const openCounters = [
   'issues'
 ]
 
+const license = root =>
+      root.addChild(node('licenseInfo').addChild(node('name')))
+
+const codeOfConduct = root =>
+      root.addChild(node('codeOfConduct').addChild(node('name')))
+
+const readme = root =>
+      root.addChild(node('object', {expression: 'master:README.md'})
+                    .addChild(node('... on Blob')
+                              .addChild(node('text'))))
+
 const repoQuery = (login, repo) => {
-  const root = node('repository', {name: repo, owner: login})
+  let root = node('repository', {name: repo, owner: login})
   for (let field of staticFields) {
-    root.addChild(node(field))
+    root = root.addChild(node(field))
   }
   for (let field of counters) {
-    root.addChild(node(field, {first: 1}).addChild('totalCount'))
+    root = root.addChild(node(field).addChild(node('totalCount')))
   }
   for (let field of openCounters) {
-    root.addChild(node(field, {states: ['OPEN'], first: 1})
-                  .addChild(node('totalCount')))
+    root = root.addChild(node(field, {states: ['OPEN']})
+                         .addChild(node('totalCount')))
   }
-  for (let file of files) {
-    root.addChild(node('object', {expression: file})
-                  .addChild(node('... on Blob')
-                            .addChild(node('text'))))
-  }
-  return root
+  return readme(license(codeOfConduct(root)))
 }
 
 const main = async config => {
   const token = await auth.dummyAuthenticate()
 
-  const qres = await run({
-    token,
-    query: repoQuery(),
-    name: 'dashboard-root',
-    verbose: true
-  })
+  return {
+    repos: config.repos.map(([login, repo]) => {
+      const result = run({
+        token,
+        query: repoQuery(login, repo),
+        name: `dashboard-root:${login}:${repo}`,
+        verbose: false
+      })
 
-  return qres
+      return {login, repo, result}
+    })
+  }
 }
 
 module.exports = {
