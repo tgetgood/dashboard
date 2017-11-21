@@ -1,20 +1,8 @@
 'use strict'
 
-const config = {
-  'orgs': [
-    'adventure-js'
-  ],
-  'individualRepos': [
-    'RichardLitt/maintainer-dashboard',
-    'RichardLitt/knowledge'
-  ]
-}
-
 const auth = require('./oauth')
 const node = require('./graphql').queryNode
 const run = require('./graphql').executequery
-
-const query = node('viewer').addChild(node('login'))
 
 const staticFields = [
   'pushedAt',
@@ -50,8 +38,13 @@ const readme = root =>
                     .addChild(node('... on Blob')
                               .addChild(node('text'))))
 
-const repoQuery = (login, repo) => {
-  let root = node('repository', {name: repo, owner: login})
+const findRepo = (login, repo) =>
+  node('repository', {name: repo, owner: login})
+
+const repoQuery = root => {
+  root = root.addChild(node('name'))
+    .addChild(node('owner').addChild(node('login')))
+
   for (let field of staticFields) {
     root = root.addChild(node(field))
   }
@@ -65,6 +58,11 @@ const repoQuery = (login, repo) => {
   return readme(license(codeOfConduct(root)))
 }
 
+const findOrg = login => node('organization', {login})
+const orgRepos = root => root
+      .addChild(node('repositories', {first: 20})
+                .addChild(repoQuery(node('nodes'))))
+
 const main = async config => {
   const token = await auth.dummyAuthenticate()
 
@@ -72,17 +70,24 @@ const main = async config => {
     repos: config.repos.map(([login, repo]) => {
       const result = run({
         token,
-        query: repoQuery(login, repo),
-        name: `dashboard-root:${login}:${repo}`,
+        query: repoQuery(findRepo(login, repo)),
+        name: `root-repo:${login}:${repo}`,
         verbose: false
       })
 
       return {login, repo, result}
+    }),
+    orgs: config.orgs.map(login => {
+      const result = run({
+        token,
+        query: orgRepos(findOrg(login)),
+        name: `root-org:${login}`
+      })
+      return {login, result}
     })
   }
 }
 
 module.exports = {
-  main,
-  config
+  main
 }
