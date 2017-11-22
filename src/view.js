@@ -1,5 +1,4 @@
 const react = require('react')
-const checkVitality = require('./checks')
 
 /// React helpers
 
