@@ -72,14 +72,11 @@ const dashRowModel = [
 
 const dashl2 = Array.prototype.concat.apply([], dashRowModel.map(x => x[2]))
 
-const good = div({className: 'success'},
-                    i({className: 'mdi'}, '✓'))
+const good = div({className: 'success'}, '✓')
 
-const bad = div({className: 'failure'},
-                   i({className: 'mdi mdi-checkbox-blank-circle'}))
+const bad = div({className: 'failure'}, '✗')
 
-const ugly = div({className: 'na'},
-                    i({className: 'mdi'}))
+const ugly = div({className: 'na'}, '')
 
 const renderChecks = result => {
   if (Object.keys(result).length === 0) {
