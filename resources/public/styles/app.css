@@ -26,12 +26,6 @@ font-family: 'Lato', sans-serif;
 	Datatable jQuery plugin works.
 */
 
-.success i,
-.failure i,
-.na i {
-	visibility: hidden;
-}
-
 .success i:before,
 .failure i:before,
 .na i:before {
@@ -136,11 +130,11 @@ font-family: 'Cabin', sans-serif;
 
 
 .mdi-checkbox-blank-circle {
-	color: #9ab3ff;
+	color: indianred;
 }
 
-.mdi-checkbox-blank-circle-outline {
-	color: #d9d9e0;
+.success {
+		font-size: 2em;
 }
 
 .flex-wrapper { display: flex; }
