@@ -5,6 +5,7 @@ const node = require('./graphql').queryNode
 const run = require('./graphql').executequery
 
 const staticFields = [
+  'isPrivate',
   'pushedAt',
   'homepageUrl',
   'resourcePath'
@@ -18,6 +19,7 @@ const readmeNames = [
 ]
 
 const counters = [
+  'forks',
   'stargazers',
   'watchers'
 ]

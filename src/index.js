@@ -14,5 +14,5 @@ const config = {
 const query = require('./query').main(config)
 
 reactDOM.render(
-  react.createElement(view.RepoMatrix, {query}, null),
+  react.createElement(view.Root, {query}, null),
   document.getElementById('react-root'))
