@@ -21,6 +21,9 @@ const td = domfn('td')
 // Dummy model
 // TODO: Needs to go
 
+const findRow = (list, [login, repo]) =>
+  list.find(l => l.login === login && l.repo === repo)
+
 /** Linear scan find and replace. Slow, but not used much.
  */
 const findAndReplace = (list, {login, repo, result}) => {
@@ -30,7 +33,9 @@ const findAndReplace = (list, {login, repo, result}) => {
     .concat(list.slice(i + 1, list.length))
 }
 
-/// Domain model
+/// ----------------------------------------------------------------------
+// Dashboard
+/// ----------------------------------------------------------------------
 
 const readme = pred =>
       repo => {
@@ -45,6 +50,7 @@ const readme = pred =>
 
 const containsSection = section => text => text.indexOf(section) >= 0
 
+/// Domain model
 // Format: Top level category, class, [(subcategory, predicate)]
 const dashRowModel = [
   ['README', 'readme', [
@@ -95,12 +101,23 @@ const renderChecks = result => {
     })
 }
 
+const pushE = new window.CustomEvent('pushstate')
+
+const pushState = function () {
+  console.log('push')
+  window.history.pushState.apply(window.history, arguments)
+  window.dispatchEvent(pushE)
+}
+
 const userUrl = login => `https://github.com/${login}`
 const repoUrl = (login, repo) => `https://github.com/${login}/${repo}`
 
+const redirect = (login, repo) => e =>
+      pushState({}, '', window.location.origin + `?login=${login}&repo=${repo}`)
+
 const repoStatus = ({login, repo, result}, index) =>
       tr({key: repo + index, className: index === 0 % 2 ? 'even' : 'odd'},
-         td({className: 'left repo-name'},
+         td({className: 'left repo-name', onClick: redirect(login, repo)},
             a({href: userUrl(login), className: 'name-org'}, login),
             span({className: 'separator'}, '/'),
             a({href: repoUrl(login, repo), className: 'name-repo'}, repo)),
@@ -119,22 +136,55 @@ const repoMatrix = state =>
                               th({
                                 className: `left ${key}`,
                                 colSpan: rest.length,
-                                key: key},
-                                 name))),
+                                key: key
+                              }, name))),
                   tr({},
                      th({className: 'left repo'}, 'Repo Name'),
                      dashl2.map(([name, pred]) => th({key: name}, name)))),
                  tbody({}, state.repos.map(repoStatus)))
 
+/// ----------------------------------------------------------------------
+// repo page
+/// ----------------------------------------------------------------------
+
+const repoPage = state =>
+      div({}, '')
+
+/// ----------------------------------------------------------------------
+// Root View
+/// ----------------------------------------------------------------------
+
+const qs = require('query-string').parse
+
 class Root extends react.Component {
   constructor (props) {
     super(props)
-    this.state = {repos: []}
+    this.state = {repos: [], state: 'dash'}
   }
   // All of the promise resolution logic happens here in didMount. This seems
   // like a terrible way to do things. Async components would make life so much
   // less bug prone.
   async componentDidMount () {
+    // Routing
+    const checkQuery = e => {
+      console.log('query')
+      const query = qs(window.location.search)
+      const newState = (query.login && query.repo)
+            ? [query.login, query.repo] : 'dash'
+
+      this.setState((prev, props) => {
+        return {
+          repos: prev.repos,
+          orgs: prev.orgs,
+          state: newState
+        }
+      })
+    }
+    checkQuery()
+    window.addEventListener('pushstate', checkQuery)
+    window.addEventListener('popstate', checkQuery)
+
+    // Promise fulfillment
     const q = await this.props.query
     this.setState((prev, props) => q)
 
@@ -175,7 +225,11 @@ class Root extends react.Component {
       const rem = this.state.rateLimit.remaining - this.state.rateLimit.cost
       console.log('Quota remaining: ' + rem)
     }
-    return repoMatrix(this.state)
+    if (this.state.state === 'dash') {
+      return repoMatrix(this.state)
+    } else {
+      return repoPage(findRow(this.state.repos, this.state.state))
+    }
   }
 }
 
