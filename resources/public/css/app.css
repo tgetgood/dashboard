@@ -2,34 +2,16 @@ html {
 	width: 100%;
 }
 
-/*font-family: 'Bitter', serif;
-font-family: 'Vesper Libre', serif;
-font-family: 'Cabin', sans-serif;
-font-family: 'Lato', sans-serif;
-
-*/
-
-/*
-	We're using Material Design icon library
-	to display icons, which attaches it to the :before psuedo
-	class. We dont want to see the ascii character, but we do
-	want to leave it in the DOM/flow so the sorting via the
-	Datatable jQuery plugin works.
-*/
-
-.success i:before,
-.failure i:before,
-.na i:before {
-	visibility: visible;
-}
-
-/* .na {
-	color: grey;
-	line-height: 2em;
-}
- */
 td.no-padding {
 	padding: 0px ! important;
+}
+
+.repo-name {
+		text-align: center;
+}
+
+.container {
+		max-width: 96%;
 }
 
 td, th {
@@ -49,6 +31,7 @@ td.left, th.left {
 
 th {
 	font-family: 'Inconsolata', monospace;
+	font-size: 1.5em;
 }
 
 th.left {
