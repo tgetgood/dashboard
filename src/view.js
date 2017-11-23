@@ -8,7 +8,13 @@ const domfn = tag => (...args) => el.apply(null, [tag].concat(args))
 const div = domfn('div')
 const span = domfn('span')
 const a = domfn('a')
-const i = domfn('i')
+
+const h1 = domfn('h1')
+const h2 = domfn('h2')
+const h3 = domfn('h3')
+const h4 = domfn('h4')
+const h5 = domfn('h5')
+const h6 = domfn('h6')
 
 const table = domfn('table')
 const thead = domfn('thead')
@@ -71,11 +77,23 @@ const dashRowModel = [
 
 const dashl2 = Array.prototype.concat.apply([], dashRowModel.map(x => x[2]))
 
-const good = div({className: 'success'}, '✓')
+const good = span({className: 'success'}, '✓')
 
-const bad = div({className: 'failure'}, '✗')
+const bad = span({className: 'failure'}, '✗')
 
-const ugly = div({className: 'na'}, '')
+const ugly = span({className: 'na'}, '')
+
+const interpretStatus = x => {
+  if (x == null) {
+    return ugly
+  } else if (x === true) {
+    return good
+  } else if (x === false) {
+    return bad
+  } else {
+    return span({}, x)
+  }
+}
 
 const renderChecks = result => {
   if (Object.keys(result).length === 0) {
@@ -84,23 +102,12 @@ const renderChecks = result => {
     return [div({}, 'repository not found')]
   }
   return dashl2.map(x => x[1](result.repository))
-    .map(x => {
-      if (x == null) {
-        return ugly
-      } else if (x === true) {
-        return good
-      } else if (x === false) {
-        return bad
-      } else {
-        return span({}, x)
-      }
-    })
+    .map(interpretStatus)
 }
 
 const pushE = new window.CustomEvent('pushstate')
 
 const pushState = function () {
-  console.log('push')
   window.history.pushState.apply(window.history, arguments)
   window.dispatchEvent(pushE)
 }
@@ -114,37 +121,140 @@ const redirect = (login, repo) => e =>
 const repoStatus = ({login, repo, result}, index) =>
       tr({key: repo + index, className: index === 0 % 2 ? 'even' : 'odd'},
          td({className: 'left repo-name', onClick: redirect(login, repo)},
-            a({href: userUrl(login), className: 'name-org'}, login),
-            span({className: 'separator'}, '/'),
-            a({href: repoUrl(login, repo), className: 'name-repo'}, repo)),
+            h6({}, login + '/' + repo)),
          renderChecks(result)
          .map((r, i) =>
               td({className: 'no-padding', key: login + repo + index + ':' + i}, r)))
 
 const repoMatrix = state =>
       table({
-        className: 'stripe order-column compact cell-border dataTable',
+        className: 'u-full-width',
         id: 'matrix'},
             thead({},
                   tr({},
-                     th({className: 'begin'}, 'Repository'),
+                     th({}, 'Repository'),
                      dashRowModel.map(([name, key, rest]) =>
                               th({
-                                className: `left ${key}`,
+                                className: `${key}`,
                                 colSpan: rest.length,
                                 key: key
                               }, name))),
                   tr({},
-                     th({className: 'left repo'}, 'Repo Name'),
-                     dashl2.map(([name, pred]) => th({key: name}, name)))),
+                     th({}, 'Repo Name'),
+                     dashl2.map(([name, pred]) =>
+                                th({key: name}, name)))),
                  tbody({}, state.repos.map(repoStatus)))
 
 /// ----------------------------------------------------------------------
 // repo page
 /// ----------------------------------------------------------------------
 
-const repoPage = state =>
-      div({}, '')
+const mklink = (href, title) => a({href: href, className: 'large-link'}, title || href)
+
+const errNone = span({}, span({}, 'None '), bad)
+
+const notNone = x => x === 'None' ? errNone : x
+
+const healthModel = [
+  ['Public Repo?', x => !x.isPrivate],
+  ['Home Page', x => x.homepageUrl ? mklink(x.homepageUrl) : errNone],
+  ['License', x => x.licenseInfo ? x.licenseInfo.name : errNone],
+  ['Code of Conduct', x => notNone(x.codeOfConduct.name)],
+  ['Last Commit', x => new Date(x.pushedAt).toLocaleDateString()]
+]
+
+const statsModel = [
+  ['Watchers', x => x.watchers.totalCount],
+  ['Stars', x => x.stargazers.totalCount],
+  ['Forks', x => x.forks.totalCount],
+  ['Open Issues', x => x.issues.totalCount],
+  ['Open PRs', x => x.pullRequests.totalCount]
+]
+
+const readmeModel = [
+  ['Read Me', 'readme', [
+    ['File Name', x => 'README.md'],
+    ['Lines', x => x.object.text.split('\n').length]
+  ]],
+  ['Sections', 'sections', [
+    ['ToC', readme(containsSection('Table of Contents'))],
+    ['Install', readme(containsSection('## Install'))],
+    ['Usage', readme(containsSection('## Usage'))],
+    ['Contribute', readme(containsSection('## Contribute'))],
+    ['License', readme(containsSection('## License'))]
+  ]]
+]
+
+const statusBody = (format, repo) =>
+      ([name, pred]) =>
+      tr({key: name},
+         td({}, span({}, name)),
+         td({}, format(pred(repo))))
+
+const easyTable = (model, result) =>
+      tbody({},
+            model.map(statusBody(interpretStatus, result.repository)))
+
+const readmeTable = result => {
+  if (!result.repository.object) {
+    return div({className: 'warning'}, 'No README found')
+  }
+  const text = result.repository.object.text
+
+  return div({className: 'container'},
+             readmeModel.map(([cat, c, props]) => {
+               return div({className: 'row', key: cat},
+                          table({},
+                                thead({},
+                                      tr({},
+                                         th({className: c}, cat))),
+                                easyTable(props, result)))
+             }))
+}
+
+const statsTable = result =>
+      table({},
+            thead({},
+                  tr({},
+                     th({className: 'github'}, 'Community'))),
+            easyTable(statsModel, result))
+
+const health = result =>
+      table({},
+            thead({},
+                  tr({},
+                     th({}, 'Basic Info'))),
+            easyTable(healthModel, result))
+
+const header = (login, repo) =>
+      h1({className: 'repo-name'},
+         a({href: userUrl(login)}, login),
+         span({}, ' / '),
+         a({href: repoUrl(login, repo)}, repo))
+
+const repoPage = state => {
+  if (!state || state.result.then) {
+    return h4({}, 'Loading ...')
+  } else if (!state.result.repository) {
+    return h4({}, 'Repository not found. Is the name correct?')
+  }
+  const {login, repo, result} = state
+
+  if (result.then) {
+    return header(login, repo)
+  }
+
+  return div({className: 'container u-full-width'},
+             div({className: 'row'},
+                 header(login, repo)),
+             div({className: 'row'},
+                 div({className: 'four columns'},
+                     health(result)),
+                 div({className: 'four columns'},
+                     readmeTable(result)),
+                 div({className: 'four columns'},
+                     statsTable(result))))
+}
 
 /// ----------------------------------------------------------------------
 // Root View
@@ -163,7 +273,6 @@ class Root extends react.Component {
   async componentDidMount () {
     // Routing
     const checkQuery = e => {
-      console.log('query')
       const query = qs(window.location.search)
       const newState = (query.login && query.repo)
             ? [query.login, query.repo] : 'dash'
