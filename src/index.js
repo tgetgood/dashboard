@@ -1,18 +1,14 @@
+const axios = require('axios')
+
 const reactDOM = require('react-dom')
 const react = require('react')
+
 const view = require('./view')
+const query = require('./query')
 
-const config = {
-  repos: [
-    ['tgetgood', 'whodunnit'],
-    ['mntnr', 'name-your-contributors'],
-    ['tgetgood', 'dashboard']
-  ],
-  orgs: ['mntnr', 'adventure-js']
-}
-
-const query = require('./query').main(config)
+const appData = axios.get('/config.json')
+      .then(res => query(res.data))
 
 reactDOM.render(
-  react.createElement(view.Root, {query}, null),
+  react.createElement(view.Root, {appData}, null),
   document.getElementById('react-root'))

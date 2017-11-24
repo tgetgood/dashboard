@@ -1,0 +1,9 @@
+{
+	"token": "0123456789abcedef==",
+	"repos": [
+		["tgetgood", "whodunnit"],
+		["mntnr", "name-your-contributors"],
+		["tgetgood", "dashboard"]
+	],
+	"orgs": ["mntnr", "adventure-js"]
+}

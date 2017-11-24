@@ -6,3 +6,4 @@
 /npm-debug.log
 /tmp/
 dummyAuth.js
+resources/public/config.json

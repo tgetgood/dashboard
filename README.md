@@ -5,8 +5,6 @@
 This is a status board for repositories within a GitHub organization.
 It displays build health, and other measures that we care about internally.
 
-Hosted on IPFS!
-
 ## Table of Contents
 
 - [Install](#install)
@@ -22,7 +20,7 @@ This work started with [ipfs/project-repos](https://github.com/ipfs/project-repo
 
 ## Install
 
-Simply clone this repo.
+Simply clone this repo and run `npm install`.
 
 ## Usage
 
@@ -30,31 +28,38 @@ Simply clone this repo.
 
 To recompile continuously, and start a development server with hot reloading:
 
-    npm run dev
+	npm run dev
+
+The app will be hosted at
+
+	http://localhost:8080
 
 To build minified javascript for production:
 
-    npm run build
+	npm run build
+
+### Configuration
+
+The tool reads its configuration from `resources/public/config.json` which it
+expects to exist. To start go to the `resources/public` directory, copy
+`config.json.example` to `config.json`, and change the `token` field to be your
+GitHub token. Now you're ready to go.
+
+`repos` is a list of repositories to monitor, given in the form of
+`[login, repoName]` pairs. `orgs` is a list of organisation names each of which
+will be monitored.
 
 ### Token
 
-You will need a GitHub token in order to have more requests available to you, as this is a very request-heavy tool. Set it in your environment as `MAINTAINER_DASHBOARD`, or include this token in the `data.json` config in a `token` field.
+You need a GitHub API token to use the service. At present this is specified as
+the `token` field in `config.json`.
 
-### Enterprise
+### Current Limtations
 
-Add a `rootURL` field to `data.json` with the endpoint needed.
+This tool is still under active development. A list of known issues follows:
 
-## Deploy
-
-To deploy this, after merging any new PRs, follow these steps:
-
-1. Have an ipfs daemon running: `ipfs daemon`
-2. Kill your `npm run dev` script if you happen to have it running.
-3. `npm install && npm prune`
-4. `npm run publish`. This should open the published page on the gateway.
-5. Pin the hash: `ipfs pin add <hash>`
-6. Pin the hash to the gateways, on IRC: `!pin <hash> project-repos.ipfs.io`
-7. Post the hash and url to https://github.com/ipfs/ops-requests/issues.
+- Only detects README.md. Other potential readme filenames won't register.
+- Only fetches the first 20 repos per org from the config file
 
 ## Contribute
 

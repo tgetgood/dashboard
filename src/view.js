@@ -267,6 +267,7 @@ class Root extends react.Component {
     super(props)
     this.state = {repos: [], state: 'dash'}
   }
+
   // All of the promise resolution logic happens here in didMount. This seems
   // like a terrible way to do things. Async components would make life so much
   // less bug prone.
@@ -290,7 +291,7 @@ class Root extends react.Component {
     window.addEventListener('popstate', checkQuery)
 
     // Promise fulfillment
-    const q = await this.props.query
+    const q = await this.props.appData
     this.setState((prev, props) => q)
 
     for (let {login, repo, result} of q.repos) {
