@@ -1,6 +1,5 @@
 'use strict'
 
-const auth = require('./oauth')
 const node = require('./graphql').queryNode
 const run = require('./graphql').executequery
 
@@ -66,12 +65,10 @@ const orgRepos = root => root
                 .addChild(repoQuery(node('nodes'))))
 
 const main = async config => {
-  const token = await auth.dummyAuthenticate()
-
   return {
     repos: config.repos.map(([login, repo]) => {
       const result = run({
-        token,
+        token: config.token,
         query: repoQuery(findRepo(login, repo)),
         name: `root-repo:${login}:${repo}`,
         verbose: false
@@ -81,7 +78,7 @@ const main = async config => {
     }),
     orgs: config.orgs.map(login => {
       const result = run({
-        token,
+        token: config.token,
         query: orgRepos(findOrg(login)),
         name: `root-org:${login}`
       })
@@ -90,6 +87,4 @@ const main = async config => {
   }
 }
 
-module.exports = {
-  main
-}
+module.exports = main
