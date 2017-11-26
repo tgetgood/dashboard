@@ -1,4 +1,5 @@
 const react = require('react')
+const readmeInfo = require('./query').readmeInfo
 
 /// React helpers
 
@@ -43,10 +44,10 @@ const findAndReplace = (list, {login, repo, result}) => {
 /// ----------------------------------------------------------------------
 
 const readme = pred =>
-      repo => {
-        if (!repo || !repo.object) {
+      x => {
+        if (!x.readme || !x.readme.text) {
           return null
-        } else if (pred(repo.object.text)) {
+        } else if (pred(x.readme.text)) {
           return true
         } else {
           return false
@@ -59,7 +60,7 @@ const containsSection = section => text => text.indexOf(section) >= 0
 // Format: Top level category, class, [(subcategory, predicate)]
 const dashRowModel = [
   ['README', 'readme', [
-    ['Read Me', x => x.object != null],
+    ['Read Me', x => x.readme != null && x.readme.file != null],
     ['> 500 chars', readme(x => x.length > 500)],
     ['Install', readme(containsSection('## Install'))],
     ['ToC', readme(containsSection('Table of Contents'))],
@@ -68,10 +69,10 @@ const dashRowModel = [
     ['License', readme(containsSection('## License'))]
   ]],
   ['GitHub', 'github', [
-    ['License Info', x => x.licenseInfo != null],
-    ['Code of Conduct', x => x.codeOfConduct !== 'None'],
-    ['Stars', x => x.stargazers.totalCount],
-    ['Open Issues', x => x.issues.totalCount]
+    ['License Info', x => x.repository.licenseInfo != null],
+    ['Code of Conduct', x => x.repository.codeOfConduct !== 'None'],
+    ['Stars', x => x.repository.stargazers.totalCount],
+    ['Open Issues', x => x.repository.issues.totalCount]
   ]]
 ]
 
@@ -101,7 +102,7 @@ const renderChecks = result => {
   } else if (!result.repository) {
     return [div({}, 'repository not found')]
   }
-  return dashl2.map(x => x[1](result.repository))
+  return dashl2.map(x => x[1](result))
     .map(interpretStatus)
 }
 
@@ -173,8 +174,8 @@ const statsModel = [
 
 const readmeModel = [
   ['Read Me', 'readme', [
-    ['File Name', x => 'README.md'],
-    ['Lines', x => x.object.text.split('\n').length]
+    ['File Name', x => x.readme.file],
+    ['Lines', x => x.readme.text.split('\n').length]
   ]],
   ['Sections', 'sections', [
     ['ToC', readme(containsSection('Table of Contents'))],
@@ -191,16 +192,14 @@ const statusBody = (format, repo) =>
          td({}, span({}, name)),
          td({}, format(pred(repo))))
 
-const easyTable = (model, result) =>
+const easyTable = (model, data) =>
       tbody({},
-            model.map(statusBody(interpretStatus, result.repository)))
+            model.map(statusBody(interpretStatus, data)))
 
 const readmeTable = result => {
-  if (!result.repository.object) {
+  if (!result.readme || result.readme.then) {
     return div({className: 'warning'}, 'No README found')
   }
-  const text = result.repository.object.text
-
   return div({className: 'container'},
              readmeModel.map(([cat, c, props]) => {
                return div({className: 'row', key: cat},
@@ -217,14 +216,14 @@ const statsTable = result =>
             thead({},
                   tr({},
                      th({className: 'github'}, 'Community'))),
-            easyTable(statsModel, result))
+            easyTable(statsModel, result.repository))
 
 const health = result =>
       table({},
             thead({},
                   tr({},
                      th({}, 'Basic Info'))),
-            easyTable(healthModel, result))
+            easyTable(healthModel, result.repository))
 
 const header = (login, repo) =>
       h1({className: 'repo-name'},
@@ -303,17 +302,38 @@ class Root extends react.Component {
           rateLimit: r.rateLimit
         }
       })
+      let readme = await r.readme
+      r.readme = readme
+
+      this.setState((prev, props) => {
+        return {
+          orgs: prev.orgs,
+          rateLimit: prev.rateLimit,
+          repos: findAndReplace(prev.repos, {
+            login,
+            repo,
+            result: {repository: r.repository, readme}
+          })
+        }
+      })
     }
 
     for (let {result} of q.orgs) {
       let org = await result
+      let ad = await this.props.appData
       let repos = org.organization.repositories.nodes.map(o => {
         return {
           login: o.owner.login,
           repo: o.name,
-          result: {repository: o}
+          result: readmeInfo({
+            result: {repository: o},
+            login: o.owner.login,
+            repo: o.name,
+            token: ad.token
+          })
         }
-      })
+      }).map(({result}) => result)
+
       if (repos.length > 0) {
         this.setState((prev, props) => {
           return {
@@ -321,6 +341,27 @@ class Root extends react.Component {
             repos: prev.repos.concat(repos),
             rateLimit: org.rateLimit
           }
+        })
+        repos.map(async ({login, repo, result}) => {
+          let readme = null
+          try {
+            readme = await result.readme
+          } catch (e) {}
+
+          this.setState((prev, props) => {
+            return {
+              orgs: prev.orgs,
+              rateLimit: prev.rateLimit,
+              repos: findAndReplace(prev.repos, {
+                login,
+                repo,
+                result: {
+                  repository: result.repository,
+                  readme
+                }
+              })
+            }
+          })
         })
       }
     }

@@ -12,7 +12,6 @@ const staticFields = [
 
 const readmeNames = [
   'readme.md',
-  'README.md',
   'Readme.md',
   'README.rst'
 ]
@@ -34,8 +33,8 @@ const license = root =>
 const codeOfConduct = root =>
       root.addChild(node('codeOfConduct').addChild(node('name')))
 
-const readme = root =>
-      root.addChild(node('object', {expression: 'master:README.md'})
+const readme = (fname, root) =>
+      root.addChild(node('object', {expression: `master:${fname}`})
                     .addChild(node('... on Blob')
                               .addChild(node('text'))))
 
@@ -56,7 +55,7 @@ const repoQuery = root => {
     root = root.addChild(node(field, {states: ['OPEN']})
                          .addChild(node('totalCount')))
   }
-  return readme(license(codeOfConduct(root)))
+  return readme('README.md', license(codeOfConduct(root)))
 }
 
 const findOrg = login => node('organization', {login})
@@ -64,27 +63,84 @@ const orgRepos = root => root
       .addChild(node('repositories', {first: 20})
                 .addChild(repoQuery(node('nodes'))))
 
+const findReadme = ({object, name, moreNames, login, repo, token}) =>
+      new Promise((resolve, reject) => {
+        if (object && object.text) {
+          resolve({file: name, text: object.text})
+        } else if (moreNames.length === 0) {
+          reject(new Error('No readme found'))
+        } else {
+          const next = moreNames[0]
+          run({
+            token,
+            name: `${next}: ${login}/${repo}`,
+            query: readme(next, findRepo(login, repo))
+          }).then(result => {
+            resolve(findReadme({
+              object: result.repository.object,
+              name: next,
+              moreNames: moreNames.slice(1, moreNames.length),
+              login,
+              repo,
+              token
+            }))
+          })
+        }
+      })
+
+const withReadmeInner = ({login, repo, result, token}) => {
+  if (!result.repository) {
+    return result
+  }
+  result.readme = findReadme({
+    login,
+    repo,
+    token,
+    object: result.repository.object,
+    name: 'README.md',
+    moreNames: readmeNames
+  })
+  return result
+}
+
+const withReadme = ({login, repo, result, token}) => {
+  if (result.then) {
+    return result.then(result => withReadmeInner({login, repo, token, result}))
+  } else {
+    return withReadmeInner({login, repo, result, token})
+  }
+}
+
+const readmeInfo = ({login, repo, result, token}) => {
+  const res = withReadme({login, repo, result, token})
+  return {login, repo, result: res}
+}
+
 const main = async config => {
+  const token = config.token
   return {
     repos: config.repos.map(([login, repo]) => {
       const result = run({
-        token: config.token,
+        token,
         query: repoQuery(findRepo(login, repo)),
         name: `root-repo:${login}:${repo}`,
         verbose: false
       })
-
       return {login, repo, result}
-    }),
+    }).map(({login, repo, result}) => readmeInfo({login, repo, result, token})),
     orgs: config.orgs.map(login => {
       const result = run({
-        token: config.token,
+        token,
         query: orgRepos(findOrg(login)),
         name: `root-org:${login}`
       })
       return {login, result}
-    })
+    }),
+    token
   }
 }
 
-module.exports = main
+module.exports = {
+  main,
+  readmeInfo
+}

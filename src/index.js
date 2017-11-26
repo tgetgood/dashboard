@@ -4,7 +4,7 @@ const reactDOM = require('react-dom')
 const react = require('react')
 
 const view = require('./view')
-const query = require('./query')
+const query = require('./query').main
 
 const appData = axios.get('/config.json')
       .then(res => query(res.data))
