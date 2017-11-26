@@ -58,8 +58,9 @@ the `token` field in `config.json`.
 
 This tool is still under active development. A list of known issues follows:
 
-- Only detects README.md. Other potential readme filenames won't register.
 - Only fetches the first 20 repos per org from the config file
+- Only checks the master branch, so if your main branch is named something else
+  you'll get a lot of false negatives.
 
 ## Contribute
 
