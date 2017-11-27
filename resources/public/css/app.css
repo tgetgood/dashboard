@@ -49,15 +49,34 @@ thead tr:nth-of-type(2){
 .failure {
 		vertical-align: middle;
 		font-weight: bold;
-		font-size: 1.7em;
+		font-size: 2em;
 		color: indianred;
 }
 
 .success {
 	color: #5BFFAE;
 	vertical-align: middle;
-	font-weight: bold;
-	font-size: 2.2em;
+	font-size: 2em;
+}
+
+.success i,
+.failure i,
+.na i {
+	visibility: hidden;
+}
+
+.success i:before,
+.failure i:before,
+.na i:before {
+	visibility: visible;
+}
+
+.mdi-checkbox-blank-circle {
+	color: #9ab3ff;
+}
+
+.mdi-checkbox-blank-circle-outline {
+	color: #d9d9e0;
 }
 
 .flex-wrapper { display: flex; }
@@ -108,4 +127,13 @@ thead tr:nth-of-type(2){
 }
 #matrix {
 		width: 100%;
+}
+
+
+.mdi-checkbox-blank-circle {
+	color: #9ab3ff;
+}
+
+.mdi-checkbox-blank-circle-outline {
+	color: #d9d9e0;
 }

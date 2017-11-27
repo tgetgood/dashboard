@@ -9,6 +9,7 @@ const domfn = tag => (...args) => el.apply(null, [tag].concat(args))
 const div = domfn('div')
 const span = domfn('span')
 const a = domfn('a')
+const i = domfn('i')
 
 const h1 = domfn('h1')
 const h2 = domfn('h2')
@@ -78,9 +79,11 @@ const dashRowModel = [
 
 const dashl2 = Array.prototype.concat.apply([], dashRowModel.map(x => x[2]))
 
-const good = span({className: 'success'}, '✓')
+const good = span({className: 'success'},
+                  i({className: 'mdi mdi-checkbox-blank-circle-outline'}, '✓'))
 
-const bad = span({className: 'failure'}, '✗')
+const bad = span({className: 'failure'},
+                 i({className: 'mdi mdi-checkbox-blank-circle'}, '✗'))
 
 const ugly = span({className: 'na'}, '')
 
